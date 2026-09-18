@@ -12,39 +12,58 @@
   "boundSignals": {
     "refundAmount": "parameters.amount"
   },
-  "requiredConditions": [
-    "refundEligible must equal true",
-    "managerApproved must equal true",
-    "fraudCheckPassed must equal true",
-    "refundAmount must be less than or equal to 10000"
-  ],
+  "unboundSignalReasons": {
+    "refundEligible": "Result of an independent eligibility check against the customer/order record; not a value the Intent itself declares.",
+    "managerApproved": "Attested by a separate human-approval step; the Intent carries no approval-status field to bind against.",
+    "fraudCheckPassed": "Result of an independent fraud-assessment system; not something the Intent's target/parameters could express."
+  },
   "rules": [
     {
       "id": "approve-refund",
-      "outcome": "approve",
-      "reason": "Eligibility, approval, fraud assessment, and refund amount requirements satisfied."
+      "condition": {
+        "all": [
+          { "fact": "refundEligible", "operator": "eq", "value": true },
+          { "fact": "managerApproved", "operator": "eq", "value": true },
+          { "fact": "fraudCheckPassed", "operator": "eq", "value": true },
+          { "fact": "refundAmount", "operator": "lte", "value": 10000 }
+        ]
+      },
+      "outcome": {
+        "action": "approve",
+        "reason": "Refund authorized. Eligibility, approval, fraud assessment, and refund amount requirements were satisfied."
+      }
     },
     {
       "id": "reject-excessive-refund",
-      "condition": "refundAmount > 10000",
-      "outcome": "reject",
-      "reason": "Requested refund exceeds the maximum permitted threshold."
+      "condition": {
+        "fact": "refundAmount",
+        "operator": "gt",
+        "value": 10000
+      },
+      "outcome": {
+        "action": "reject",
+        "reason": "Refund rejected because the requested refund amount exceeds the maximum permitted threshold."
+      }
     },
     {
       "id": "reject-fraud-check",
-      "condition": "fraudCheckPassed = false",
-      "outcome": "reject",
-      "reason": "Transaction did not pass fraud assessment."
+      "condition": {
+        "fact": "fraudCheckPassed",
+        "operator": "eq",
+        "value": false
+      },
+      "outcome": {
+        "action": "reject",
+        "reason": "Refund rejected because the transaction did not pass fraud assessment."
+      }
     },
     {
       "id": "reject-default",
-      "condition": "Any required condition is not satisfied",
-      "outcome": "reject",
-      "reason": "One or more required policy conditions were not satisfied."
+      "condition": { "always": true },
+      "outcome": {
+        "action": "reject",
+        "reason": "Refund rejected because one or more required policy conditions were not satisfied."
+      }
     }
-  ],
-  "mvpExecutionBoundary": {
-    "amountLimit": 5000,
-    "purpose": "Local fail-closed execution guard for this MVP; separate from the Parmana customer-refund policy."
-  }
+  ]
 }
