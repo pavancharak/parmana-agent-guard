@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parmana Agent Guard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <span class="eyebrow">PARMANA AGENT GUARD</span>
+    <h1>AI can propose. Business policy authorizes.</h1>
+    <p>Authorization happens before the business action executes.</p>
+  </div>
+  <span class="badge">refund-policy-v1</span>
+</header>
+<main>
+  <section class="card controls">
+    <h2>Refund Agent</h2>
+    <p>Run each scenario to see the authorization boundary.</p>
+    <div class="buttons">
+      <button data-amount="3500">Request ₹3,500 refund</button>
+      <button data-amount="7500">Request ₹7,500 refund</button>
+      <button class="attack" data-amount="7500">Try Direct API Attack</button>
+    </div>
+  </section>
+  <section class="grid">
+    <article class="card"><h2>AI Agent</h2><pre id="agent">No request yet.</pre></article>
+    <article class="card"><h2>Parmana Authorization</h2><div id="authorization">No decision yet.</div></article>
+    <article class="card"><h2>Execution Evidence</h2><pre id="evidence">No evidence yet.</pre></article>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
