@@ -67,7 +67,7 @@ async function runScenario(button) {
       ? "Parmana rejected the policy request. Execution was not attempted."
       : "No authorization decision was returned by Parmana.";
 
-  // Step 1: show exactly what Parmana returned. The UI does not invent
+  // Step 1: show the policy evaluation separately from the live Parmana response. The UI does not invent
   // an authorization decision when the API did not provide one.
   authorization.innerHTML = `
     <div class="decision ${responseClass}">
@@ -76,7 +76,7 @@ async function runScenario(button) {
     <p><strong>Parmana HTTP:</strong> ${remoteStatus ?? "N/A"}</p>
     <p><strong>Status:</strong> ${statusLabel}</p>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
-    ${policyEvaluation ? `<p><strong>Parmana Policy Engine:</strong> ${policyEvaluation.decision}</p><p><strong>Matched rule:</strong> ${policyEvaluation.ruleId || "not returned"}</p><p><strong>Policy reason:</strong> ${policyEvaluation.reason || "not returned"}</p>` : ""}
+    ${policyEvaluation ? `<p><strong>Policy rule evaluation:</strong> ${policyEvaluation.decision}</p><p><strong>Matched policy rule:</strong> ${policyEvaluation.ruleId || "not returned"}</p><p><strong>Policy evaluation reason:</strong> ${policyEvaluation.reason || "not returned"}</p>` : ""}
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Parmana decision field:</strong> ${result.authorization.decision ?? "not returned"}</p>
     <p><strong>Parmana reason field:</strong> ${result.authorization.reason ?? "not returned"}</p>
