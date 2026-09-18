@@ -14,8 +14,14 @@ async function runScenario(button) {
     managerApproved: button.dataset.managerApproved === "true"
   };
 
+  // Keep the AI proposal separate from business authorization signals.
+  // The agent proposes the refund; manager approval is supplied as business context.
   agent.textContent = JSON.stringify({
-    proposal: action,
+    proposal: {
+      action: action.action,
+      amount: action.amount,
+      reason: action.reason
+    },
     path: button.classList.contains("attack")
       ? "DIRECT_API_REQUEST"
       : "AI_AGENT"
