@@ -37,11 +37,11 @@ function buildTransaction(action) {
       schemaVersion: "1.0.0"
     },
     signals: {
-      refundEligible: true,
+      refundEligible: action.refundEligible === true,
       // Manager approval is an explicit business signal for the demo.
       // It is not derived from the refund amount.
       managerApproved: action.managerApproved === true,
-      fraudCheckPassed: true,
+      fraudCheckPassed: action.fraudCheckPassed === true,
       refundAmount: action.amount
     },
     status: "RECEIVED",
