@@ -67,8 +67,8 @@ export async function authorizeWithParmana(action) {
 
   if (response.ok) {
     return {
-      decision: "ALLOW",
-      reason: "PARMANA_APPROVED",
+      decision: body.decision || "ALLOW",
+      reason: body.reason || body.message || "PARMANA_APPROVED",
       policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
@@ -79,8 +79,8 @@ export async function authorizeWithParmana(action) {
 
   if (response.status === 403) {
     return {
-      decision: "BLOCK",
-      reason: body.code === "POLICY_DENIED" ? "PARMANA_POLICY_DENIED" : "PARMANA_REQUEST_DENIED",
+      decision: body.decision || "BLOCK",
+      reason: body.reason || body.code || "PARMANA_REQUEST_DENIED",
       policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
@@ -90,8 +90,8 @@ export async function authorizeWithParmana(action) {
   }
 
   return {
-    decision: "AUTHORIZED",
-    reason: "PARMANA_AUTHORIZED_EXECUTION_DISPATCH",
+    decision: body.decision || "PARMANA_RESPONSE",
+    reason: body.reason || body.code || "PARMANA_RESPONSE",
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
