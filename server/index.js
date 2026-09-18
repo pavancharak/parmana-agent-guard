@@ -33,7 +33,7 @@ app.post("/api/execute", async (req, res) => {
     // The execution boundary is fail-closed: only an explicit APPROVE from Parmana
     // can reach the execution function. Every other response is preserved as-is
     // and prevents execution.
-    if (authorization.decision !== "APPROVE") {
+    if (authorization.decision !== "APPROVE" || authorization.remoteStatus !== 200) {
       const remoteStatus = authorization.remoteStatus ?? null;
       const isPolicyRejection =
         authorization.decision === "REJECT" ||
