@@ -1,86 +1,91 @@
 # Parmana Agent Guard
 
-> **AI can propose. Business policy authorizes. Parmana enforces before execution.**
+> **AI can propose. Real Parmana authorizes. Execution only happens after authorization.**
 
-A focused MVP demonstrating how an AI agent can propose a business action while a server-side authorization layer determines whether that action may actually execute.
+A focused buildathon MVP showing an AI agent proposing a customer refund while the **real Parmana API** evaluates the action against the deployed `customer-refund@1.0.0` policy.
 
-## Demo
+## Real Parmana flow
 
-This prototype uses a customer refund agent.
+```
+AI Agent
+   |
+   | refund proposal
+   v
+Agent Guard
+   |
+   | BusinessTransaction
+   v
+REAL PARMANA API
+   |
+   | customer-refund@1.0.0
+   v
+ALLOW / BLOCK
+   |
+   +---- BLOCK ----> No execution
+   |
+   +---- ALLOW ----> Mock refund execution
+                       |
+                       v
+                    Evidence
+```
 
-Policy:
+The important boundary is that the local demo no longer makes the authorization decision itself. Parmana does.
 
-- Standard customers may receive automatic refunds up to ₹5,000.
-- Refunds above ₹5,000 require manager approval.
-- Only damaged or defective orders are eligible.
-
-### Three scenarios
+## Demo scenarios
 
 **1. Allowed**
 
-₹3,500 damaged-order refund → **ALLOWED** → mock refund executes → evidence generated.
+₹3,500 damaged-order refund → sent to real Parmana → policy approval → mock execution → evidence.
 
 **2. Blocked**
 
-₹7,500 damaged-order refund → **BLOCKED** → refund is not executed.
+₹7,500 damaged-order refund → sent to real Parmana → policy rejection → no execution.
 
 **3. Direct API attack**
 
-A request attempts to call the execution endpoint directly with ₹7,500, bypassing the agent. The server applies the same authorization check and blocks it.
+A request attempts to call Agent Guard directly with ₹7,500. The request still goes through the real Parmana authorization boundary before any local execution.
 
-The important property is:
+## Setup
 
-```
-AI Agent ──> Authorization ──> Execution
-                         ^
-Direct API Request ──────┘
-```
+Create a local `.env` file:
 
-## Architecture
-
-```
-Customer Request
-      ↓
-   AI Agent
-      ↓
-Proposed Action
-      ↓
-Parmana Authorization
-      ↓
-   ┌──┴──┐
- ALLOW BLOCK
-   ↓     ↓
-Execute  Evidence
-   ↓
-Execution Evidence
+```env
+PORT=3000
+PARMANA_API_URL=https://parmana-api-real.vercel.app
+PARMANA_API_KEY=your_parmana_demo_key
 ```
 
-## Run locally
-
-Requires Node.js 20+.
+Install and run:
 
 ```bash
 npm install
 npm start
 ```
 
-Open the URL printed by the server.
+Open:
 
-## Replit
-
-Import the repository into Replit and run:
-
-```bash
-npm install
-npm start
+```
+http://localhost:3000
 ```
 
-The application binds to `0.0.0.0` and uses the `PORT` environment variable when provided.
+## Important
+
+The API key is a secret. Do not commit `.env` or paste the key into GitHub.
+
+The real Parmana API expects a `BusinessTransaction` with:
+
+- a real UUID `businessTransactionId`
+- `authorityType: SERVICE`
+- `principalId: demo` for the demo key
+- policy `customer-refund@1.0.0`
+- bound `refundAmount` matching `intent.parameters.amount`
+
+The deployed API is documented in the main Parmana repository's `LIVE-API-GUIDE.md`.
 
 ## Scope
 
-This is a buildathon MVP, not a production deployment. It intentionally uses an in-memory evidence store, a local JSON policy, a mock refund system, and no authentication or real payment movement.
+This is a buildathon MVP. Parmana authorization is real; the final refund connector remains a mock execution so the demo does not move real customer money.
 
-## Parmana
+That separation is deliberate:
 
-Parmana is infrastructure for making sure software follows authorized business decisions and produces evidence of what actually happened.
+**Parmana proves whether the action is authorized. The execution adapter performs the authorized action.**
