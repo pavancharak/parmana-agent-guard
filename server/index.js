@@ -33,7 +33,7 @@ app.post("/api/execute", async (req, res) => {
     // The execution boundary is fail-closed: only an explicit ALLOW from Parmana
     // can reach the execution function. Every other response is displayed as-is
     // and prevents execution.
-    if (authorization.decision !== "ALLOW" && authorization.decision !== "AUTHORIZED") {
+    if (authorization.decision !== "APPROVE") {
       const evidence = recordEvidence({
         decisionId: authorization.transactionId,
         action,
