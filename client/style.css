@@ -10,3 +10,15 @@ button.attack { background:#9f1239; } .grid { display:grid; grid-template-column
 pre { white-space:pre-wrap; word-break:break-word; background:#f8fafc; padding:14px; border-radius:10px; min-height:180px; }
 .decision { font-size:28px; font-weight:800; margin-bottom:18px; } .allow { color:#166534; } .block { color:#b91c1c; }
 @media(max-width:850px){.grid{grid-template-columns:1fr} header{flex-direction:column;align-items:flex-start}}
+
+.policy-card { margin-bottom: 20px; }
+.policy-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.policy-heading h2 { margin:6px 0 0; }
+.policy-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0; }
+.policy-grid div { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; }
+.policy-grid strong, .policy-grid span { display:block; }
+.policy-grid strong { font-size:12px; color:#64748b; margin-bottom:5px; }
+.policy-grid span { font-weight:700; }
+details { margin-top:14px; }
+summary { cursor:pointer; font-weight:700; }
+@media(max-width:850px){.policy-grid{grid-template-columns:1fr 1fr}.policy-heading{align-items:flex-start;flex-direction:column}}
