@@ -48,6 +48,11 @@ app.post("/api/execute", async (req, res) => {
           ? "EXECUTION_GUARD_LIMIT_EXCEEDED"
           : authorization.reason,
         executionStatus: "NOT_EXECUTED",
+        parmanaExecution: {
+          status: authorization.remoteStatus,
+          completed: true,
+          response: authorization.remoteResponse
+        },
         source: "REAL_PARMANA_API"
       });
 
@@ -76,6 +81,11 @@ app.post("/api/execute", async (req, res) => {
       reason: authorization.reason,
       executionStatus: execution.status,
       executionId: execution.executionId,
+      parmanaExecution: {
+        status: authorization.remoteStatus,
+        completed: true,
+        response: authorization.remoteResponse
+      },
       source: "REAL_PARMANA_API"
     });
 
@@ -86,6 +96,10 @@ app.post("/api/execute", async (req, res) => {
       decision: "BLOCK",
       reason: error instanceof Error ? error.message : "PARMANA_API_ERROR",
       executionStatus: "NOT_EXECUTED",
+      parmanaExecution: {
+        status: null,
+        completed: false
+      },
       source: "REAL_PARMANA_API"
     });
 
