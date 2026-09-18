@@ -11,7 +11,17 @@ const port = Number(process.env.PORT || 3000);
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 app.use(express.json());
-app.use(express.static(path.join(root, "client")));
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    res.set("Cache-Control", "no-store");
+  }
+  next();
+});
+app.use(express.static(path.join(root, "client"), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => res.set("Cache-Control", "no-store")
+}));
 
 app.get("/api/policy", (_req, res) => res.json(loadPolicy()));
 app.get("/api/evidence", (_req, res) => res.json(getEvidence()));
