@@ -1,0 +1,12 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #172033; background: #f5f7fb; }
+* { box-sizing: border-box; } body { margin: 0; }
+header { background: #111827; color: white; padding: 42px max(24px, calc((100% - 1180px)/2)); display:flex; justify-content:space-between; gap:24px; align-items:center; }
+h1 { max-width:760px; font-size:clamp(30px,4vw,48px); margin:8px 0; } header p { color:#cbd5e1; }
+.eyebrow { font-size:12px; letter-spacing:2px; font-weight:800; } .badge { border:1px solid #475569; padding:10px 14px; border-radius:999px; }
+main { max-width:1180px; margin:30px auto; padding:0 24px; } .card { background:white; border:1px solid #e2e8f0; border-radius:16px; padding:24px; box-shadow:0 8px 30px rgba(15,23,42,.05); }
+.controls { margin-bottom:20px; } .buttons { display:flex; flex-wrap:wrap; gap:12px; margin-top:18px; }
+button { border:0; border-radius:10px; padding:13px 17px; cursor:pointer; background:#172033; color:white; font-weight:700; }
+button.attack { background:#9f1239; } .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+pre { white-space:pre-wrap; word-break:break-word; background:#f8fafc; padding:14px; border-radius:10px; min-height:180px; }
+.decision { font-size:28px; font-weight:800; margin-bottom:18px; } .allow { color:#166534; } .block { color:#b91c1c; }
+@media(max-width:850px){.grid{grid-template-columns:1fr} header{flex-direction:column;align-items:flex-start}}
