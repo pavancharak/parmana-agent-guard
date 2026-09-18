@@ -131,11 +131,21 @@ policyToggle.addEventListener("click", async () => {
       </div>
       <div class="policy-section">
         <h3>Authorization conditions</h3>
-        <ul>${conditions.map(condition => `<li>${condition}</li>`).join("")}</ul>
+        <ul>${conditions.map(condition => {
+          if (condition && condition.fact) {
+            return \`<li><strong>${condition.fact}</strong> ${condition.operator} <strong>${JSON.stringify(condition.value)}</strong></li>\`;
+          }
+          return \`<li>${JSON.stringify(condition)}</li>\`;
+        }).join("")}</ul>
       </div>
       <div class="policy-section">
         <h3>Decision rules</h3>
-        <ul>${rules.map(rule => `<li><strong>${rule.id}</strong> — ${rule.outcome}: ${rule.reason}</li>`).join("")}</ul>
+        <ul>${rules.map(rule => {
+          const outcome = rule.outcome || {};
+          const action = outcome.action || "unknown";
+          const reason = outcome.reason || "No reason specified";
+          return \`<li><strong>${rule.id}</strong> — <strong>${action.toUpperCase()}</strong>: ${reason}</li>\`;
+        }).join("")}</ul>
       </div>
     `;
 
