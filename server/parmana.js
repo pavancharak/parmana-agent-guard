@@ -78,56 +78,30 @@ export async function authorizeWithParmana(action) {
     }
   }
 
-  let persistedRecord = null;
+  const policyDenied =
+    response.status === 403 || body.code === "POLICY_DENIED";
 
-  // /execute can fail after Parmana has evaluated policy and created its
-  // trust record. Recover that authoritative record so the UI can show the
-  // actual policy outcome instead of treating an empty dispatch response as
-  // "no decision".
-  if (!response.ok && response.status >= 500) {
-    try {
-      const recordResponse = await fetch(
-        baseUrl + "/trust-records/" + transaction.businessTransactionId,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PARMANA_API_KEY}`
-          }
-        }
-      );
-      if (recordResponse.ok) {
-        persistedRecord = await recordResponse.json().catch(() => null);
-      }
-    } catch {
-      persistedRecord = null;
-    }
-  }
-
-  const persistedDecision =
-    persistedRecord?.authorization
-      ? "APPROVE"
-      : persistedRecord?.transaction?.status === "REJECTED"
-        ? "REJECT"
-        : null;
-
-  const persistedReason =
-    persistedRecord?.transaction?.status === "REJECTED"
-      ? "Parmana recorded the Business Transaction as REJECTED."
-      : null;
-
+  // A 403 POLICY_DENIED is Parmana's documented policy rejection response.
+  // For approved requests, /execute can return a dispatch 500 without
+  // returning the decision in the HTTP body. Do not invent APPROVE in that case.
   return {
-    decision: body.decision ?? persistedDecision,
-    reason: body.reason ?? body.message ?? body.code ?? persistedReason,
+    decision: body.decision ?? (policyDenied ? "REJECT" : null),
+    reason:
+      body.reason ??
+      body.error ??
+      body.message ??
+      body.code ??
+      null,
     decisionSource: body.decision
       ? "PARMANA_EXECUTE_RESPONSE"
-      : persistedDecision
-        ? "PARMANA_TRUST_RECORD"
+      : policyDenied
+        ? "PARMANA_EXECUTE_RESPONSE"
         : null,
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
     remoteStatus: response.status,
     remoteResponse: body,
-    transaction,
-    trustRecord: persistedRecord
+    transaction
   };
 }
