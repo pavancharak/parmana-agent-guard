@@ -25,6 +25,22 @@
       <button class="attack" data-amount="7500">Try Direct API Attack</button>
     </div>
   </section>
+  <section class="card policy-card">
+    <div class="policy-heading">
+      <div>
+        <span class="eyebrow">TRANSPARENCY</span>
+        <h2>Current Policy</h2>
+      </div>
+      <button id="policy-toggle" type="button">View Current Policy</button>
+    </div>
+    <div id="policy-panel" hidden>
+      <div id="policy-summary">Loading policy...</div>
+      <details>
+        <summary>View policy JSON</summary>
+        <pre id="policy-json">Loading...</pre>
+      </details>
+    </div>
+  </section>
   <section class="grid">
     <article class="card"><h2>AI Agent</h2><pre id="agent">No request yet.</pre></article>
     <article class="card"><h2>Parmana Authorization</h2><div id="authorization">No decision yet.</div></article>
