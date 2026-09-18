@@ -79,8 +79,8 @@ app.post("/api/execute", async (req, res) => {
     return res.json({ authorization, execution, evidence });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "PARMANA_API_ERROR";
-    const evidence = recordEvidence({ action, decision: "BLOCK", reason, executionStatus: "NOT_EXECUTED", parmanaExecution: { status: null, completed: false }, source: "REAL_PARMANA_API" });
-    return res.status(500).json({ authorization: { decision: "BLOCK", reason, source: "REAL_PARMANA_API" }, evidence });
+    const evidence = recordEvidence({ action, parmanaDecision: null, reason, authorizationStatus: "PARMANA_API_ERROR", executionStatus: "NOT_EXECUTED", parmanaExecution: { status: null, completed: false }, source: "REAL_PARMANA_API" });
+    return res.status(500).json({ authorization: { decision: null, reason, source: "REAL_PARMANA_API" }, evidence });
   }
 });
 app.get("/{*splat}", (_req, res) =>
