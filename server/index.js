@@ -28,89 +28,33 @@ app.get("/api/evidence", (_req, res) => res.json(getEvidence()));
 
 app.post("/api/execute", async (req, res) => {
   const action = req.body;
-
   try {
-    const policy = loadPolicy();
-    const remoteAuthorization = await authorizeWithParmana(action);
-    const policyDecision = evaluatePolicy(action, policy);
-
-    if (policyDecision.decision === "BLOCK") {
+    const authorization = await authorizeWithParmana(action);
+    if (authorization.decision === "BLOCK") {
       const evidence = recordEvidence({
-        decisionId: remoteAuthorization.transactionId,
-        action,
-        policyVersion: "customer-refund@1.0.0",
-        decision: "BLOCK",
-        reason: policyDecision.reason,
-        ruleId: policyDecision.ruleId,
+        decisionId: authorization.transactionId, action,
+        policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+        decision: "BLOCK", reason: authorization.reason,
         executionStatus: "NOT_EXECUTED",
-        parmanaExecution: {
-          status: remoteAuthorization.remoteStatus,
-          completed: true,
-          response: remoteAuthorization.remoteResponse
-        },
+        parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
         source: "REAL_PARMANA_API"
       });
-
-      return res.status(403).json({
-        authorization: {
-          ...remoteAuthorization,
-          decision: "BLOCK",
-          reason: policyDecision.reason,
-          ruleId: policyDecision.ruleId
-        },
-        evidence
-      });
+      return res.status(403).json({ authorization, evidence });
     }
-
     const execution = executeRefund(action);
     const evidence = recordEvidence({
-      decisionId: remoteAuthorization.transactionId,
-      action,
-      policyVersion: "customer-refund@1.0.0",
-      decision: "ALLOW",
-      reason: policyDecision.reason,
-      ruleId: policyDecision.ruleId,
-      executionStatus: execution.status,
-      executionId: execution.executionId,
-      parmanaExecution: {
-        status: remoteAuthorization.remoteStatus,
-        completed: true,
-        response: remoteAuthorization.remoteResponse
-      },
+      decisionId: authorization.transactionId, action,
+      policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+      decision: authorization.decision, reason: authorization.reason,
+      executionStatus: execution.status, executionId: execution.executionId,
+      parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
       source: "REAL_PARMANA_API"
     });
-
-    return res.json({
-      authorization: {
-        ...remoteAuthorization,
-        decision: "ALLOW",
-        reason: policyDecision.reason,
-        ruleId: policyDecision.ruleId
-      },
-      execution,
-      evidence
-    });
+    return res.json({ authorization, execution, evidence });
   } catch (error) {
-    const evidence = recordEvidence({
-      action,
-      decision: "BLOCK",
-      reason: error instanceof Error ? error.message : "PARMANA_API_ERROR",
-      executionStatus: "NOT_EXECUTED",
-      parmanaExecution: {
-        status: null,
-        completed: false
-      },
-      source: "REAL_PARMANA_API"
-    });
-
-    return res.status(500).json({
-      authorization: {
-        decision: "BLOCK",
-        reason: error instanceof Error ? error.message : "PARMANA_API_ERROR",
-        source: "REAL_PARMANA_API"
-      },
-      evidence
-    });
+    const reason = error instanceof Error ? error.message : "PARMANA_API_ERROR";
+    const evidence = recordEvidence({ action, decision: "BLOCK", reason, executionStatus: "NOT_EXECUTED", parmanaExecution: { status: null, completed: false }, source: "REAL_PARMANA_API" });
+    return res.status(500).json({ authorization: { decision: "BLOCK", reason, source: "REAL_PARMANA_API" }, evidence });
   }
 });
 app.get("/{*splat}", (_req, res) =>
