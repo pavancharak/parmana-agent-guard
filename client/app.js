@@ -12,6 +12,7 @@ async function runScenario(button) {
 
   const response = await fetch("/api/execute", {
     method: "POST",
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(action)
   });
@@ -24,7 +25,17 @@ async function runScenario(button) {
     <p><strong>Policy:</strong> ${result.authorization.policyVersion}</p>
     <p><strong>Reason:</strong> ${result.authorization.reason}</p>
   `;
-  evidence.textContent = JSON.stringify(result.evidence, null, 2);
+  // Always render the evidence returned by this execution.
+  // Refresh from the server as well so the panel cannot remain stale.
+  const latestEvidence = await fetch("/api/evidence", {
+    cache: "no-store"
+  }).then(r => r.json()).catch(() => [result.evidence]);
+
+  evidence.textContent = JSON.stringify(
+    latestEvidence[0] || result.evidence,
+    null,
+    2
+  );
 }
 
 document.querySelectorAll("button").forEach(button => button.addEventListener("click", () => runScenario(button)));
