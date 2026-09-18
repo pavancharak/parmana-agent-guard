@@ -6,6 +6,7 @@ import { loadPolicy, evaluatePolicy } from "./policy.js";
 import { executeRefund } from "./execute.js";
 import { getEvidence, recordEvidence } from "./evidence.js";
 import { authorizeWithParmana } from "./parmana.js";
+import { getTrustedBusinessContext } from "./trusted-context.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -55,8 +56,10 @@ app.post("/api/execute", async (req, res) => {
   const action = req.body;
   try {
     const policy = loadPolicy();
-    const policyEvaluation = evaluatePolicy(action, policy);
-    const authorization = await authorizeWithParmana(action);
+    const trustedContext = getTrustedBusinessContext();
+    const governedAction = { ...action, ...trustedContext };
+    const policyEvaluation = evaluatePolicy(governedAction, policy);
+    const authorization = await authorizeWithParmana(governedAction);
     // The execution boundary is fail-closed: only an explicit APPROVE from Parmana
     // can reach the execution function. Every other response is preserved as-is
     // and prevents execution.
@@ -94,11 +97,11 @@ app.post("/api/execute", async (req, res) => {
       // Preserve the fact that this was a downstream Parmana response,
       // rather than turning a 500 into a synthetic policy BLOCK.
       const httpStatus = isPolicyRejection ? 403 : isDispatchFailure ? 502 : 403;
-      return res.status(httpStatus).json({ policyEvaluation, authorization, evidence });
+      return res.status(httpStatus).json({ trustedContext, policyEvaluation, authorization, evidence });
     }
-    const execution = executeRefund(action);
+    const execution = executeRefund(governedAction);
     const evidence = recordEvidence({
-      decisionId: authorization.transactionId, action,
+      decisionId: authorization.transactionId, action: governedAction,
       policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
       policyDecision: policyEvaluation.decision,
       policyReason: policyEvaluation.reason,
@@ -109,7 +112,7 @@ app.post("/api/execute", async (req, res) => {
       parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
       source: "REAL_PARMANA_API"
     });
-    return res.json({ policyEvaluation, authorization, execution, evidence });
+    return res.json({ trustedContext, policyEvaluation, authorization, execution, evidence });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "PARMANA_API_ERROR";
     const evidence = recordEvidence({ action, parmanaDecision: null, reason, authorizationStatus: "PARMANA_API_ERROR", executionStatus: "NOT_EXECUTED", parmanaExecution: { status: null, completed: false }, source: "REAL_PARMANA_API" });
