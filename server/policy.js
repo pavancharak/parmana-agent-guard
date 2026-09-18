@@ -10,13 +10,61 @@ export function loadPolicy() {
 }
 
 export function evaluatePolicy(action, policy) {
-  if (action.action !== "refund") return { decision: "BLOCK", reason: "ACTION_NOT_SUPPORTED" };
-  if (!Number.isFinite(action.amount) || action.amount <= 0) return { decision: "BLOCK", reason: "INVALID_AMOUNT" };
-  if (!policy.allowedReasons.includes(String(action.reason).toLowerCase())) {
-    return { decision: "BLOCK", reason: "REFUND_REASON_NOT_ELIGIBLE" };
+  if (action.action !== "refund") {
+    return { decision: "BLOCK", reason: "ACTION_NOT_SUPPORTED" };
   }
-  if (action.amount > policy.automaticRefundLimit) {
-    return { decision: "BLOCK", reason: "AMOUNT_EXCEEDS_AUTHORIZED_LIMIT" };
+
+  if (!Number.isFinite(action.amount) || action.amount <= 0) {
+    return { decision: "BLOCK", reason: "INVALID_AMOUNT" };
   }
-  return { decision: "ALLOW", reason: "WITHIN_POLICY" };
+
+  const signals = {
+    refundEligible: true,
+    managerApproved: action.amount <= 5000,
+    fraudCheckPassed: true,
+    refundAmount: action.amount
+  };
+
+  if (signals.refundAmount > 10000) {
+    return {
+      decision: "BLOCK",
+      reason: "REFUND_AMOUNT_EXCEEDS_POLICY_LIMIT",
+      ruleId: "reject-excessive-refund"
+    };
+  }
+
+  if (!signals.fraudCheckPassed) {
+    return {
+      decision: "BLOCK",
+      reason: "FRAUD_CHECK_FAILED",
+      ruleId: "reject-fraud-check"
+    };
+  }
+
+  if (
+    signals.refundEligible &&
+    signals.managerApproved &&
+    signals.fraudCheckPassed &&
+    signals.refundAmount <= 10000
+  ) {
+    return {
+      decision: "ALLOW",
+      reason: "POLICY_CONDITIONS_SATISFIED",
+      ruleId: "approve-refund"
+    };
+  }
+
+  if (!signals.managerApproved) {
+    return {
+      decision: "BLOCK",
+      reason: "MANAGER_APPROVAL_REQUIRED",
+      ruleId: "reject-default"
+    };
+  }
+
+  return {
+    decision: "BLOCK",
+    reason: "POLICY_CONDITION_NOT_SATISFIED",
+    ruleId: "reject-default"
+  };
 }
