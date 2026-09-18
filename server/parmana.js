@@ -78,40 +78,56 @@ export async function authorizeWithParmana(action) {
     }
   }
 
-  if (response.ok) {
-    return {
-      // Preserve Parmana's actual decision. Never invent ALLOW when the API
-      // did not return a decision.
-      decision: body.decision ?? null,
-      reason: body.reason ?? body.message ?? null,
-      policyVersion,
-      source: "REAL_PARMANA_API",
-      transactionId: transaction.businessTransactionId,
-      remoteStatus: response.status,
-      remoteResponse: body
-    };
+  let persistedRecord = null;
+
+  // /execute can fail after Parmana has evaluated policy and created its
+  // trust record. Recover that authoritative record so the UI can show the
+  // actual policy outcome instead of treating an empty dispatch response as
+  // "no decision".
+  if (!response.ok && response.status >= 500) {
+    try {
+      const recordResponse = await fetch(
+        baseUrl + "/trust-records/" + transaction.businessTransactionId,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PARMANA_API_KEY}`
+          }
+        }
+      );
+      if (recordResponse.ok) {
+        persistedRecord = await recordResponse.json().catch(() => null);
+      }
+    } catch {
+      persistedRecord = null;
+    }
   }
 
-  if (response.status >= 400) {
-    return {
-      // HTTP errors have no synthetic Parmana decision.
-      decision: body.decision ?? null,
-      reason: body.reason ?? body.code ?? null,
-      policyVersion,
-      source: "REAL_PARMANA_API",
-      transactionId: transaction.businessTransactionId,
-      remoteStatus: response.status,
-      remoteResponse: body
-    };
-  }
+  const persistedDecision =
+    persistedRecord?.authorization
+      ? "APPROVE"
+      : persistedRecord?.transaction?.status === "REJECTED"
+        ? "REJECT"
+        : null;
+
+  const persistedReason =
+    persistedRecord?.transaction?.status === "REJECTED"
+      ? "Parmana recorded the Business Transaction as REJECTED."
+      : null;
 
   return {
-    decision: body.decision ?? null,
-    reason: body.reason ?? body.code ?? null,
+    decision: body.decision ?? persistedDecision,
+    reason: body.reason ?? body.message ?? body.code ?? persistedReason,
+    decisionSource: body.decision
+      ? "PARMANA_EXECUTE_RESPONSE"
+      : persistedDecision
+        ? "PARMANA_TRUST_RECORD"
+        : null,
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
     remoteStatus: response.status,
-    remoteResponse: body
+    remoteResponse: body,
+    transaction,
+    trustRecord: persistedRecord
   };
 }
