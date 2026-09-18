@@ -70,7 +70,7 @@ async function runScenario(button) {
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Parmana decision field:</strong> ${result.authorization.decision ?? "not returned"}</p>
     <p><strong>Parmana reason field:</strong> ${result.authorization.reason ?? "not returned"}</p>
-    <p><strong>Execution boundary:</strong> ${isApproved ? "APPROVE received. Execution may proceed." : "NOT EXECUTED"}</p>
+    <p><strong>Execution boundary:</strong> ${isApproved && remoteStatus === 200 ? "APPROVE received. Execution may proceed." : "NOT EXECUTED"}</p>
     <details open>
       <summary>Exact Parmana API response</summary>
       <pre>${JSON.stringify(remote, null, 2)}</pre>
