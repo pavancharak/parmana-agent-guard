@@ -85,16 +85,19 @@ policyToggle.addEventListener("click", async () => {
     if (!response.ok) throw new Error(`Policy request failed: ${response.status}`);
 
     const policy = await response.json();
-    const conditions = Array.isArray(policy.requiredConditions)
-      ? policy.requiredConditions
-      : [];
     const rules = Array.isArray(policy.rules) ? policy.rules : [];
+    const approveRule = rules.find(rule => rule.id === "approve-refund");
+    const amountCondition = approveRule?.condition?.all?.find(
+      condition => condition.fact === "refundAmount" && condition.operator === "lte"
+    );
+    const maximumRefund = amountCondition?.value;
+    const conditions = approveRule?.condition?.all || [];
 
     policySummary.innerHTML = `
       <div class="policy-grid">
         <div><strong>Policy</strong><span>${policy.policyId || "customer-refund"}@${policy.policyVersion || "1.0.0"}</span></div>
         <div><strong>Schema</strong><span>${policy.schemaVersion || "Not specified"}</span></div>
-        <div><strong>Maximum refund</strong><span>₹10,000</span></div>
+        <div><strong>Maximum authorized refund</strong><span>₹${Number(maximumRefund).toLocaleString("en-IN")}</span></div>
         <div><strong>Required conditions</strong><span>${conditions.length}</span></div>
         <div><strong>Decision rules</strong><span>${rules.length}</span></div>
       </div>
