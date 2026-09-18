@@ -16,10 +16,10 @@ async function runScenario(button) {
     body: JSON.stringify(action)
   });
   const result = await response.json();
-  const allowed = result.authorization.decision === "ALLOW";
+  const allowed = result.authorization.decision === "AUTHORIZED" || result.authorization.decision === "ALLOW";
 
   authorization.innerHTML = `
-    <div class="decision ${allowed ? "allow" : "block"}">${result.authorization.decision}</div>
+    <div class="decision ${allowed ? "allow" : "block"}">${allowed ? "AUTHORIZED" : result.authorization.decision}</div>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
     <p><strong>Policy:</strong> ${result.authorization.policyVersion}</p>
     <p><strong>Reason:</strong> ${result.authorization.reason}</p>
