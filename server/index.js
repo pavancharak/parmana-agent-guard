@@ -30,13 +30,22 @@ app.post("/api/execute", async (req, res) => {
   const action = req.body;
   try {
     const authorization = await authorizeWithParmana(action);
-    if (authorization.decision === "BLOCK") {
+    // The execution boundary is fail-closed: only an explicit ALLOW from Parmana
+    // can reach the execution function. Every other response is displayed as-is
+    // and prevents execution.
+    if (authorization.decision !== "ALLOW" && authorization.decision !== "AUTHORIZED") {
       const evidence = recordEvidence({
-        decisionId: authorization.transactionId, action,
+        decisionId: authorization.transactionId,
+        action,
         policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
-        decision: "BLOCK", reason: authorization.reason,
+        parmanaDecision: authorization.decision ?? null,
+        reason: authorization.reason,
         executionStatus: "NOT_EXECUTED",
-        parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
+        parmanaExecution: {
+          status: authorization.remoteStatus,
+          completed: true,
+          response: authorization.remoteResponse
+        },
         source: "REAL_PARMANA_API"
       });
       return res.status(403).json({ authorization, evidence });
@@ -45,7 +54,8 @@ app.post("/api/execute", async (req, res) => {
     const evidence = recordEvidence({
       decisionId: authorization.transactionId, action,
       policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
-      decision: authorization.decision, reason: authorization.reason,
+      parmanaDecision: authorization.decision ?? null,
+      reason: authorization.reason,
       executionStatus: execution.status, executionId: execution.executionId,
       parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
       source: "REAL_PARMANA_API"
