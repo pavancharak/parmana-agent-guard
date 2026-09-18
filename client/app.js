@@ -40,7 +40,7 @@ async function runScenario(button) {
   // Step 1: show exactly what Parmana returned. The UI does not invent
   // an authorization decision when the API did not provide one.
   authorization.innerHTML = `
-    <div class="decision ${result.authorization.decision === "ALLOW" || result.authorization.decision === "AUTHORIZED" ? "allow" : "block"}">
+    <div class="decision ${result.authorization.decision === "APPROVE" ? "allow" : "block"}">
       PARMANA RESPONSE
     </div>
     <p><strong>Parmana HTTP:</strong> ${result.authorization.remoteStatus ?? "N/A"}</p>
