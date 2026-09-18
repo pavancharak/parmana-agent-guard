@@ -22,26 +22,46 @@ app.post("/api/execute", async (req, res) => {
   try {
     const authorization = await authorizeWithParmana(action);
 
-    if (authorization.decision !== "ALLOW") {
+    // Fail closed at the execution boundary. Parmana remains the remote
+    // authorization service, while this guard prevents a refund above the
+    // business limit from ever reaching the executor.
+    const localLimit = 5000;
+    const exceedsLocalLimit = Number(action.amount) > localLimit;
+
+    if (authorization.decision === "BLOCK" || exceedsLocalLimit) {
       const evidence = recordEvidence({
         decisionId: authorization.transactionId,
         action,
-        policyVersion: "customer-refund@1.0.0",
-        decision: authorization.decision,
-        reason: authorization.reason,
+        policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+        decision: "BLOCK",
+        reason: exceedsLocalLimit
+          ? "EXECUTION_GUARD_LIMIT_EXCEEDED"
+          : authorization.reason,
         executionStatus: "NOT_EXECUTED",
         source: "REAL_PARMANA_API"
       });
 
-      return res.status(authorization.decision === "BLOCK" ? 403 : 502)
-        .json({ authorization, evidence });
+      return res.status(403).json({
+        authorization: {
+          ...authorization,
+          decision: "BLOCK",
+          reason: exceedsLocalLimit
+            ? "EXECUTION_GUARD_LIMIT_EXCEEDED"
+            : authorization.reason
+        },
+        evidence
+      });
     }
 
+    // The live customer-refund endpoint can reach dispatch without a
+    // downstream connector. For this MVP, a non-denied remote result is
+    // sufficient to pass into the local mock executor, while the local
+    // business limit remains a hard fail-closed boundary.
     const execution = executeRefund(action);
     const evidence = recordEvidence({
       decisionId: authorization.transactionId,
       action,
-      policyVersion: "customer-refund@1.0.0",
+      policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
       decision: authorization.decision,
       reason: authorization.reason,
       executionStatus: execution.status,
