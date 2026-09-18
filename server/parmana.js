@@ -67,8 +67,10 @@ export async function authorizeWithParmana(action) {
 
   if (response.ok) {
     return {
-      decision: body.decision || "ALLOW",
-      reason: body.reason || body.message || "PARMANA_APPROVED",
+      // Preserve Parmana's actual decision. Never invent ALLOW when the API
+      // did not return a decision.
+      decision: body.decision ?? null,
+      reason: body.reason ?? body.message ?? null,
       policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
@@ -79,8 +81,9 @@ export async function authorizeWithParmana(action) {
 
   if (response.status >= 400) {
     return {
-      decision: "BLOCK",
-      reason: body.reason || body.code || (response.status === 401 ? "PARMANA_AUTHENTICATION_FAILED" : "PARMANA_REQUEST_DENIED"),
+      // HTTP errors have no synthetic Parmana decision.
+      decision: body.decision ?? null,
+      reason: body.reason ?? body.code ?? null,
       policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
@@ -90,8 +93,8 @@ export async function authorizeWithParmana(action) {
   }
 
   return {
-    decision: "BLOCK",
-    reason: body.reason || body.code || "PARMANA_REQUEST_FAILED",
+    decision: body.decision ?? null,
+    reason: body.reason ?? body.code ?? null,
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
