@@ -26,6 +26,30 @@ app.use(express.static(path.join(root, "client"), {
 app.get("/api/policy", (_req, res) => res.json(loadPolicy()));
 app.get("/api/evidence", (_req, res) => res.json(getEvidence()));
 
+app.post("/api/direct-attack", async (req, res) => {
+  const action = req.body;
+  const execution = executeRefund(action);
+  const evidence = recordEvidence({
+    decisionId: "DIRECT-ATTACK-" + Date.now(),
+    action,
+    authorizationStatus: "BYPASSED",
+    executionStatus: execution.status,
+    executionId: execution.executionId,
+    parmanaExecution: {
+      status: null,
+      completed: false,
+      response: null
+    },
+    source: "DIRECT_API_ATTACK"
+  });
+  return res.status(200).json({
+    attack: "DIRECT_API_REQUEST",
+    authorization: { decision: null, reason: "Parmana authorization was bypassed." },
+    execution,
+    evidence
+  });
+});
+
 app.post("/api/execute", async (req, res) => {
   const action = req.body;
   try {
