@@ -38,7 +38,9 @@ function buildTransaction(action) {
     },
     signals: {
       refundEligible: true,
-      managerApproved: action.amount <= 5000,
+      // Manager approval is an explicit business signal for the demo.
+      // It is not derived from the refund amount.
+      managerApproved: action.managerApproved === true,
       fraudCheckPassed: true,
       refundAmount: action.amount
     },
