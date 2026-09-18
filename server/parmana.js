@@ -65,7 +65,18 @@ export async function authorizeWithParmana(action) {
     body: JSON.stringify(transaction)
   });
 
-  const body = await response.json().catch(() => ({}));
+  // Preserve the raw upstream response. Parmana/Vercel can return a
+  // non-JSON or empty body on a 500; converting that to {} hides what
+  // actually came back from Parmana.
+  const rawResponse = await response.text();
+  let body = {};
+  if (rawResponse.trim()) {
+    try {
+      body = JSON.parse(rawResponse);
+    } catch {
+      body = { raw: rawResponse };
+    }
+  }
 
   if (response.ok) {
     return {
