@@ -133,9 +133,11 @@ policyToggle.addEventListener("click", async () => {
         <h3>Authorization conditions</h3>
         <ul>${conditions.map(condition => {
           if (condition && condition.fact) {
-            return \`<li><strong>${condition.fact}</strong> ${condition.operator} <strong>${JSON.stringify(condition.value)}</strong></li>\`;
+            return "<li><strong>" + condition.fact + "</strong> " +
+              condition.operator + " <strong>" +
+              JSON.stringify(condition.value) + "</strong></li>";
           }
-          return \`<li>${JSON.stringify(condition)}</li>\`;
+          return "<li>" + JSON.stringify(condition) + "</li>";
         }).join("")}</ul>
       </div>
       <div class="policy-section">
@@ -144,10 +146,9 @@ policyToggle.addEventListener("click", async () => {
           const outcome = rule.outcome || {};
           const action = outcome.action || "unknown";
           const reason = outcome.reason || "No reason specified";
-          return \`<li><strong>${rule.id}</strong> — <strong>${action.toUpperCase()}</strong>: ${reason}</li>\`;
+          return "<li><strong>" + rule.id + "</strong> — <strong>" +
+            action.toUpperCase() + "</strong>: " + reason + "</li>";
         }).join("")}</ul>
-      </div>
-    `;
 
     policyJson.textContent = JSON.stringify(policy, null, 2);
     policySummary.dataset.loaded = "true";
