@@ -2,17 +2,28 @@ const agent = document.querySelector("#agent");
 const authorization = document.querySelector("#authorization");
 const evidence = document.querySelector("#evidence");
 
+function nextPaint() {
+  return new Promise(resolve => requestAnimationFrame(() => resolve()));
+}
+
 async function runScenario(button) {
-  const action = { action: "refund", amount: Number(button.dataset.amount), reason: "damaged" };
+  const action = {
+    action: "refund",
+    amount: Number(button.dataset.amount),
+    reason: "damaged"
+  };
+
   agent.textContent = JSON.stringify({
     proposal: action,
-    path: button.classList.contains("attack") ? "DIRECT_API_REQUEST" : "AI_AGENT"
+    path: button.classList.contains("attack")
+      ? "DIRECT_API_REQUEST"
+      : "AI_AGENT"
   }, null, 2);
-  authorization.textContent = "Sending request to Parmana...";
+
+  // Evidence must follow the authorization decision.
+  authorization.textContent = "Checking Parmana authorization...";
   evidence.textContent = JSON.stringify({
-    status: "WAITING_FOR_PARMANA",
-    action,
-    executionStatus: "NOT_EXECUTED"
+    status: "WAITING_FOR_AUTHORIZATION"
   }, null, 2);
 
   const response = await fetch("/api/execute", {
@@ -21,36 +32,37 @@ async function runScenario(button) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(action)
   });
+
   const result = await response.json();
 
-  // Parmana has returned. Update the evidence panel immediately with the
-  // execution response that produced the final authorization decision.
-  evidence.textContent = JSON.stringify({
-    status: "PARMANA_RESPONSE_RECEIVED",
-    parmanaExecution: result.evidence?.parmanaExecution,
-    decision: result.authorization?.decision,
-    policyVersion: result.authorization?.policyVersion,
-    executionStatus: result.evidence?.executionStatus
-  }, null, 2);
-  const allowed = result.authorization.decision === "AUTHORIZED" || result.authorization.decision === "ALLOW";
+  const allowed =
+    result.authorization.decision === "AUTHORIZED" ||
+    result.authorization.decision === "ALLOW";
 
+  // Step 1: show Parmana's authorization decision first.
   authorization.innerHTML = `
-    <div class="decision ${allowed ? "allow" : "block"}">${allowed ? "AUTHORIZED" : result.authorization.decision}</div>
+    <div class="decision ${allowed ? "allow" : "block"}">
+      ${allowed ? "AUTHORIZED" : result.authorization.decision}
+    </div>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
-    <p><strong>Policy:</strong> ${result.authorization.policyVersion}</p>
+    <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Reason:</strong> ${result.authorization.reason}</p>
   `;
-  // Always render the evidence returned by this execution.
-  // Refresh from the server as well so the panel cannot remain stale.
-  const latestEvidence = await fetch("/api/evidence", {
-    cache: "no-store"
-  }).then(r => r.json()).catch(() => [result.evidence]);
 
+  // Let the browser paint the authorization result before evidence appears.
+  await nextPaint();
+  await new Promise(resolve => setTimeout(resolve, 250));
+
+  // Step 2: show the evidence produced after the authorization/execution result.
   evidence.textContent = JSON.stringify(
-    latestEvidence[0] || result.evidence,
+    result.evidence,
     null,
     2
   );
 }
 
-document.querySelectorAll("button").forEach(button => button.addEventListener("click", () => runScenario(button)));
+document
+  .querySelectorAll("button")
+  .forEach(button =>
+    button.addEventListener("click", () => runScenario(button))
+  );
