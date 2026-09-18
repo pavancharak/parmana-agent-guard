@@ -38,15 +38,21 @@ async function runScenario(button) {
   const allowed =
     result.authorization.decision === "AUTHORIZED" ||
     result.authorization.decision === "ALLOW";
+  const remote = result.authorization.remoteResponse || {};
 
   // Step 1: show Parmana's authorization decision first.
   authorization.innerHTML = `
     <div class="decision ${allowed ? "allow" : "block"}">
       ${allowed ? "AUTHORIZED" : result.authorization.decision}
     </div>
+    <p><strong>Parmana HTTP:</strong> ${result.authorization.remoteStatus ?? "N/A"}</p>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Reason:</strong> ${result.authorization.reason}</p>
+    <details>
+      <summary>Exact Parmana API response</summary>
+      <pre>${JSON.stringify(remote, null, 2)}</pre>
+    </details>
   `;
 
   // Let the browser paint the authorization result before evidence appears.
