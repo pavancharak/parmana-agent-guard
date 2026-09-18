@@ -43,6 +43,7 @@ async function runScenario(button) {
   const result = await response.json();
 
   const remote = result.authorization.remoteResponse || {};
+  const policyEvaluation = result.policyEvaluation || null;
   const remoteStatus = result.authorization.remoteStatus ?? null;
   const isApproved = result.authorization.decision === "APPROVE";
   const isRejected =
@@ -73,6 +74,7 @@ async function runScenario(button) {
     <p><strong>Parmana HTTP:</strong> ${remoteStatus ?? "N/A"}</p>
     <p><strong>Status:</strong> ${statusLabel}</p>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
+    ${policyEvaluation ? `<p><strong>Parmana Policy Engine:</strong> ${policyEvaluation.decision}</p><p><strong>Matched rule:</strong> ${policyEvaluation.matchedRuleId || "not returned"}</p><p><strong>Policy reason:</strong> ${policyEvaluation.reason || "not returned"}</p>` : ""}
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Parmana decision field:</strong> ${result.authorization.decision ?? "not returned"}</p>
     <p><strong>Parmana reason field:</strong> ${result.authorization.reason ?? "not returned"}</p>
