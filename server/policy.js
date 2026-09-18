@@ -19,9 +19,9 @@ export function evaluatePolicy(action, policy) {
   }
 
   const signals = {
-    refundEligible: true,
+    refundEligible: action.refundEligible === true,
     managerApproved: action.managerApproved === true,
-    fraudCheckPassed: true,
+    fraudCheckPassed: action.fraudCheckPassed === true,
     refundAmount: action.amount
   };
 
