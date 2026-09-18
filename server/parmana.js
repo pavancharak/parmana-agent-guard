@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
 
 const baseUrl = process.env.PARMANA_API_URL || "https://parmana-api-real.vercel.app";
+const policyVersion = "customer-refund@1.0.0";
 
 function buildTransaction(action) {
   const transactionId = crypto.randomUUID();
   const now = new Date().toISOString();
+  const callerId = process.env.PARMANA_CALLER_ID || "agent-guard-buildathon";
 
   return {
     businessTransactionId: transactionId,
@@ -12,7 +14,7 @@ function buildTransaction(action) {
     authority: {
       authorityId: "authority-agent-guard",
       authorityType: "SERVICE",
-      principalId: "demo",
+      principalId: callerId,
       issuedAt: now
     },
     authorization: {
@@ -67,6 +69,7 @@ export async function authorizeWithParmana(action) {
     return {
       decision: "ALLOW",
       reason: "PARMANA_APPROVED",
+      policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
       remoteStatus: response.status,
@@ -78,6 +81,7 @@ export async function authorizeWithParmana(action) {
     return {
       decision: "BLOCK",
       reason: body.code === "POLICY_DENIED" ? "PARMANA_POLICY_DENIED" : "PARMANA_REQUEST_DENIED",
+      policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
       remoteStatus: response.status,
@@ -88,6 +92,7 @@ export async function authorizeWithParmana(action) {
   return {
     decision: "REMOTE_APPROVAL_REACHED",
     reason: "PARMANA_REACHED_EXECUTION_DISPATCH",
+    policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
     remoteStatus: response.status,
