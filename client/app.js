@@ -97,7 +97,6 @@ policyToggle.addEventListener("click", async () => {
         <div><strong>Maximum refund</strong><span>₹10,000</span></div>
         <div><strong>Required conditions</strong><span>${conditions.length}</span></div>
         <div><strong>Decision rules</strong><span>${rules.length}</span></div>
-        <div><strong>Execution guard</strong><span>₹5,000 MVP hard limit</span></div>
       </div>
       <div class="policy-section">
         <h3>Authorization conditions</h3>
@@ -107,7 +106,6 @@ policyToggle.addEventListener("click", async () => {
         <h3>Decision rules</h3>
         <ul>${rules.map(rule => `<li><strong>${rule.id}</strong> — ${rule.outcome}: ${rule.reason}</li>`).join("")}</ul>
       </div>
-      <p class="policy-note"><strong>Important:</strong> The ₹5,000 execution guard is a separate MVP enforcement boundary. The Parmana customer refund policy permits up to ₹10,000 when all required authorization conditions are satisfied.</p>
     `;
 
     policyJson.textContent = JSON.stringify(policy, null, 2);
