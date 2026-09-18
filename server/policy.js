@@ -20,7 +20,7 @@ export function evaluatePolicy(action, policy) {
 
   const signals = {
     refundEligible: true,
-    managerApproved: action.amount <= 5000,
+    managerApproved: action.managerApproved === true,
     fraudCheckPassed: true,
     refundAmount: action.amount
   };
