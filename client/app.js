@@ -149,6 +149,8 @@ policyToggle.addEventListener("click", async () => {
           return "<li><strong>" + rule.id + "</strong> — <strong>" +
             action.toUpperCase() + "</strong>: " + reason + "</li>";
         }).join("")}</ul>
+      </div>
+    `;
 
     policyJson.textContent = JSON.stringify(policy, null, 2);
     policySummary.dataset.loaded = "true";
