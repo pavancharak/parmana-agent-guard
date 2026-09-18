@@ -82,22 +82,38 @@ policyToggle.addEventListener("click", async () => {
 
   try {
     const response = await fetch("/api/policy", { cache: "no-store" });
+    if (!response.ok) throw new Error(`Policy request failed: ${response.status}`);
+
     const policy = await response.json();
+    const conditions = Array.isArray(policy.requiredConditions)
+      ? policy.requiredConditions
+      : [];
+    const rules = Array.isArray(policy.rules) ? policy.rules : [];
 
     policySummary.innerHTML = `
       <div class="policy-grid">
-        <div><strong>Policy</strong><span>${policy.policyVersion}</span></div>
-        <div><strong>Customer</strong><span>${policy.customerType}</span></div>
-        <div><strong>Automatic refund limit</strong><span>₹${Number(policy.automaticRefundLimit).toLocaleString("en-IN")}</span></div>
-        <div><strong>Allowed reasons</strong><span>${policy.allowedReasons.join(", ")}</span></div>
-        <div><strong>Approval above limit</strong><span>${policy.approvalRequiredAboveLimit ? "Required" : "Not required"}</span></div>
-        <div><strong>Execution guard</strong><span>₹5,000 hard limit</span></div>
+        <div><strong>Policy</strong><span>${policy.policyId || "customer-refund"}@${policy.policyVersion || "1.0.0"}</span></div>
+        <div><strong>Schema</strong><span>${policy.schemaVersion || "Not specified"}</span></div>
+        <div><strong>Maximum refund</strong><span>₹10,000</span></div>
+        <div><strong>Required conditions</strong><span>${conditions.length}</span></div>
+        <div><strong>Decision rules</strong><span>${rules.length}</span></div>
+        <div><strong>Execution guard</strong><span>₹5,000 MVP hard limit</span></div>
       </div>
+      <div class="policy-section">
+        <h3>Authorization conditions</h3>
+        <ul>${conditions.map(condition => `<li>${condition}</li>`).join("")}</ul>
+      </div>
+      <div class="policy-section">
+        <h3>Decision rules</h3>
+        <ul>${rules.map(rule => `<li><strong>${rule.id}</strong> — ${rule.outcome}: ${rule.reason}</li>`).join("")}</ul>
+      </div>
+      <p class="policy-note"><strong>Important:</strong> The ₹5,000 execution guard is a separate MVP enforcement boundary. The Parmana customer refund policy permits up to ₹10,000 when all required authorization conditions are satisfied.</p>
     `;
+
     policyJson.textContent = JSON.stringify(policy, null, 2);
     policySummary.dataset.loaded = "true";
   } catch (error) {
     policySummary.textContent = "Unable to load current policy.";
     policyJson.textContent = String(error);
   }
-});
+});\n
