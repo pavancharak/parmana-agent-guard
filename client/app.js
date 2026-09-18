@@ -10,7 +10,8 @@ async function runScenario(button) {
   const action = {
     action: "refund",
     amount: Number(button.dataset.amount),
-    reason: "damaged"
+    reason: "damaged",
+    managerApproved: button.dataset.managerApproved === "true"
   };
 
   agent.textContent = JSON.stringify({
