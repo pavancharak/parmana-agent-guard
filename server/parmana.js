@@ -6,7 +6,7 @@ const policyVersion = "customer-refund@1.0.0";
 function buildTransaction(action) {
   const transactionId = crypto.randomUUID();
   const now = new Date().toISOString();
-  const callerId = process.env.PARMANA_CALLER_ID || "agent-guard-buildathon";
+  const callerId = process.env.PARMANA_CALLER_ID || "demo";
 
   return {
     businessTransactionId: transactionId,
@@ -77,10 +77,10 @@ export async function authorizeWithParmana(action) {
     };
   }
 
-  if (response.status === 403) {
+  if (response.status >= 400) {
     return {
-      decision: body.decision || "BLOCK",
-      reason: body.reason || body.code || "PARMANA_REQUEST_DENIED",
+      decision: "BLOCK",
+      reason: body.reason || body.code || (response.status === 401 ? "PARMANA_AUTHENTICATION_FAILED" : "PARMANA_REQUEST_DENIED"),
       policyVersion,
       source: "REAL_PARMANA_API",
       transactionId: transaction.businessTransactionId,
@@ -90,8 +90,8 @@ export async function authorizeWithParmana(action) {
   }
 
   return {
-    decision: body.decision || "PARMANA_RESPONSE",
-    reason: body.reason || body.code || "PARMANA_RESPONSE",
+    decision: "BLOCK",
+    reason: body.reason || body.code || "PARMANA_REQUEST_FAILED",
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
