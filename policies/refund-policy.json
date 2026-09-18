@@ -1,0 +1,7 @@
+{
+  "policyVersion": "refund-policy-v1",
+  "customerType": "standard",
+  "automaticRefundLimit": 5000,
+  "allowedReasons": ["damaged", "defective"],
+  "approvalRequiredAboveLimit": true
+}
