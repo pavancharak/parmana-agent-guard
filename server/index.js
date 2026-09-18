@@ -1,7 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadPolicy } from "./policy.js";
+import { loadPolicy, evaluatePolicy } from "./policy.js";
 import { executeRefund } from "./execute.js";
 import { getEvidence, recordEvidence } from "./evidence.js";
 import { authorizeWithParmana } from "./parmana.js";
@@ -29,6 +29,8 @@ app.get("/api/evidence", (_req, res) => res.json(getEvidence()));
 app.post("/api/execute", async (req, res) => {
   const action = req.body;
   try {
+    const policy = loadPolicy();
+    const policyEvaluation = evaluatePolicy(action, policy);
     const authorization = await authorizeWithParmana(action);
     // The execution boundary is fail-closed: only an explicit APPROVE from Parmana
     // can reach the execution function. Every other response is preserved as-is
@@ -45,6 +47,9 @@ app.post("/api/execute", async (req, res) => {
         decisionId: authorization.transactionId,
         action,
         policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+        policyDecision: policyEvaluation.decision,
+        policyReason: policyEvaluation.reason,
+        policyRuleId: policyEvaluation.ruleId ?? null,
         parmanaDecision: authorization.decision ?? null,
         reason: authorization.reason,
         authorizationStatus: isPolicyRejection
@@ -64,19 +69,22 @@ app.post("/api/execute", async (req, res) => {
       // Preserve the fact that this was a downstream Parmana response,
       // rather than turning a 500 into a synthetic policy BLOCK.
       const httpStatus = isPolicyRejection ? 403 : isDispatchFailure ? 502 : 403;
-      return res.status(httpStatus).json({ authorization, evidence });
+      return res.status(httpStatus).json({ policyEvaluation, authorization, evidence });
     }
     const execution = executeRefund(action);
     const evidence = recordEvidence({
       decisionId: authorization.transactionId, action,
       policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+      policyDecision: policyEvaluation.decision,
+      policyReason: policyEvaluation.reason,
+      policyRuleId: policyEvaluation.ruleId ?? null,
       parmanaDecision: authorization.decision ?? null,
       reason: authorization.reason,
       executionStatus: execution.status, executionId: execution.executionId,
       parmanaExecution: { status: authorization.remoteStatus, completed: true, response: authorization.remoteResponse },
       source: "REAL_PARMANA_API"
     });
-    return res.json({ authorization, execution, evidence });
+    return res.json({ policyEvaluation, authorization, execution, evidence });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "PARMANA_API_ERROR";
     const evidence = recordEvidence({ action, parmanaDecision: null, reason, authorizationStatus: "PARMANA_API_ERROR", executionStatus: "NOT_EXECUTED", parmanaExecution: { status: null, completed: false }, source: "REAL_PARMANA_API" });
