@@ -35,21 +35,20 @@ async function runScenario(button) {
 
   const result = await response.json();
 
-  const allowed =
-    result.authorization.decision === "AUTHORIZED" ||
-    result.authorization.decision === "ALLOW";
   const remote = result.authorization.remoteResponse || {};
 
-  // Step 1: show Parmana's authorization decision first.
+  // Step 1: show exactly what Parmana returned. The UI does not invent
+  // an authorization decision when the API did not provide one.
   authorization.innerHTML = `
-    <div class="decision ${allowed ? "allow" : "block"}">
-      ${allowed ? "AUTHORIZED" : result.authorization.decision}
+    <div class="decision ${result.authorization.decision === "ALLOW" || result.authorization.decision === "AUTHORIZED" ? "allow" : "block"}">
+      PARMANA RESPONSE
     </div>
     <p><strong>Parmana HTTP:</strong> ${result.authorization.remoteStatus ?? "N/A"}</p>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
-    <p><strong>Reason:</strong> ${result.authorization.reason}</p>
-    <details>
+    <p><strong>Parmana decision field:</strong> ${result.authorization.decision ?? "not returned"}</p>
+    <p><strong>Parmana reason field:</strong> ${result.authorization.reason ?? "not returned"}</p>
+    <details open>
       <summary>Exact Parmana API response</summary>
       <pre>${JSON.stringify(remote, null, 2)}</pre>
     </details>
