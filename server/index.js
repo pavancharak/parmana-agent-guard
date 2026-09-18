@@ -30,66 +30,66 @@ app.post("/api/execute", async (req, res) => {
   const action = req.body;
 
   try {
-    const authorization = await authorizeWithParmana(action);
+    const policy = loadPolicy();
+    const remoteAuthorization = await authorizeWithParmana(action);
+    const policyDecision = evaluatePolicy(action, policy);
 
-    // Fail closed at the execution boundary. Parmana remains the remote
-    // authorization service, while this guard prevents a refund above the
-    // business limit from ever reaching the executor.
-    const localLimit = 5000;
-    const exceedsLocalLimit = Number(action.amount) > localLimit;
-
-    if (authorization.decision === "BLOCK" || exceedsLocalLimit) {
+    if (policyDecision.decision === "BLOCK") {
       const evidence = recordEvidence({
-        decisionId: authorization.transactionId,
+        decisionId: remoteAuthorization.transactionId,
         action,
-        policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
+        policyVersion: "customer-refund@1.0.0",
         decision: "BLOCK",
-        reason: exceedsLocalLimit
-          ? "EXECUTION_GUARD_LIMIT_EXCEEDED"
-          : authorization.reason,
+        reason: policyDecision.reason,
+        ruleId: policyDecision.ruleId,
         executionStatus: "NOT_EXECUTED",
         parmanaExecution: {
-          status: authorization.remoteStatus,
+          status: remoteAuthorization.remoteStatus,
           completed: true,
-          response: authorization.remoteResponse
+          response: remoteAuthorization.remoteResponse
         },
         source: "REAL_PARMANA_API"
       });
 
       return res.status(403).json({
         authorization: {
-          ...authorization,
+          ...remoteAuthorization,
           decision: "BLOCK",
-          reason: exceedsLocalLimit
-            ? "EXECUTION_GUARD_LIMIT_EXCEEDED"
-            : authorization.reason
+          reason: policyDecision.reason,
+          ruleId: policyDecision.ruleId
         },
         evidence
       });
     }
 
-    // The live customer-refund endpoint can reach dispatch without a
-    // downstream connector. For this MVP, a non-denied remote result is
-    // sufficient to pass into the local mock executor, while the local
-    // business limit remains a hard fail-closed boundary.
     const execution = executeRefund(action);
     const evidence = recordEvidence({
-      decisionId: authorization.transactionId,
+      decisionId: remoteAuthorization.transactionId,
       action,
-      policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
-      decision: authorization.decision,
-      reason: authorization.reason,
+      policyVersion: "customer-refund@1.0.0",
+      decision: "ALLOW",
+      reason: policyDecision.reason,
+      ruleId: policyDecision.ruleId,
       executionStatus: execution.status,
       executionId: execution.executionId,
       parmanaExecution: {
-        status: authorization.remoteStatus,
+        status: remoteAuthorization.remoteStatus,
         completed: true,
-        response: authorization.remoteResponse
+        response: remoteAuthorization.remoteResponse
       },
       source: "REAL_PARMANA_API"
     });
 
-    return res.json({ authorization, execution, evidence });
+    return res.json({
+      authorization: {
+        ...remoteAuthorization,
+        decision: "ALLOW",
+        reason: policyDecision.reason,
+        ruleId: policyDecision.ruleId
+      },
+      execution,
+      evidence
+    });
   } catch (error) {
     const evidence = recordEvidence({
       action,
@@ -113,7 +113,6 @@ app.post("/api/execute", async (req, res) => {
     });
   }
 });
-
 app.get("/{*splat}", (_req, res) =>
   res.sendFile(path.join(root, "client", "index.html"))
 );
