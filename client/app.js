@@ -62,7 +62,7 @@ async function runScenario(button) {
 }
 
 document
-  .querySelectorAll("button")
+  .querySelectorAll(".buttons button")
   .forEach(button =>
     button.addEventListener("click", () => runScenario(button))
   );
@@ -116,4 +116,4 @@ policyToggle.addEventListener("click", async () => {
     policySummary.textContent = "Unable to load current policy.";
     policyJson.textContent = String(error);
   }
-});\n
+});
