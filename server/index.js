@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 import { loadPolicy, evaluatePolicy } from "./policy.js";
 import { executeRefund } from "./execute.js";
 import { getEvidence, recordEvidence } from "./evidence.js";
@@ -30,7 +31,7 @@ app.post("/api/direct-attack", async (req, res) => {
   const action = req.body;
   const execution = executeRefund(action);
   const evidence = recordEvidence({
-    decisionId: "DIRECT-ATTACK-" + Date.now(),
+    decisionId: "DIRECT-ATTACK-" + crypto.createHash("sha256").update(JSON.stringify(action)).digest("hex").slice(0, 12),
     action,
     authorizationStatus: "BYPASSED",
     executionStatus: execution.status,
