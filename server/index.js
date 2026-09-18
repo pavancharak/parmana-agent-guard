@@ -30,25 +30,41 @@ app.post("/api/execute", async (req, res) => {
   const action = req.body;
   try {
     const authorization = await authorizeWithParmana(action);
-    // The execution boundary is fail-closed: only an explicit ALLOW from Parmana
-    // can reach the execution function. Every other response is displayed as-is
+    // The execution boundary is fail-closed: only an explicit APPROVE from Parmana
+    // can reach the execution function. Every other response is preserved as-is
     // and prevents execution.
     if (authorization.decision !== "APPROVE") {
+      const remoteStatus = authorization.remoteStatus ?? null;
+      const isPolicyRejection =
+        authorization.decision === "REJECT" ||
+        remoteStatus === 403 ||
+        authorization.remoteResponse?.code === "POLICY_DENIED";
+      const isDispatchFailure = remoteStatus !== null && remoteStatus >= 500;
+
       const evidence = recordEvidence({
         decisionId: authorization.transactionId,
         action,
         policyVersion: authorization.policyVersion || "customer-refund@1.0.0",
         parmanaDecision: authorization.decision ?? null,
         reason: authorization.reason,
+        authorizationStatus: isPolicyRejection
+          ? "POLICY_REJECTED"
+          : isDispatchFailure
+            ? "DISPATCH_FAILED"
+            : "NO_DECISION_RETURNED",
         executionStatus: "NOT_EXECUTED",
         parmanaExecution: {
-          status: authorization.remoteStatus,
+          status: remoteStatus,
           completed: true,
           response: authorization.remoteResponse
         },
         source: "REAL_PARMANA_API"
       });
-      return res.status(403).json({ authorization, evidence });
+
+      // Preserve the fact that this was a downstream Parmana response,
+      // rather than turning a 500 into a synthetic policy BLOCK.
+      const httpStatus = isPolicyRejection ? 403 : isDispatchFailure ? 502 : 403;
+      return res.status(httpStatus).json({ authorization, evidence });
     }
     const execution = executeRefund(action);
     const evidence = recordEvidence({
