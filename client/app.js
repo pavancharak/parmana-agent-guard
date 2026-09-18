@@ -66,3 +66,38 @@ document
   .forEach(button =>
     button.addEventListener("click", () => runScenario(button))
   );
+
+
+const policyToggle = document.querySelector("#policy-toggle");
+const policyPanel = document.querySelector("#policy-panel");
+const policySummary = document.querySelector("#policy-summary");
+const policyJson = document.querySelector("#policy-json");
+
+policyToggle.addEventListener("click", async () => {
+  const opening = policyPanel.hidden;
+  policyPanel.hidden = !opening;
+  policyToggle.textContent = opening ? "Hide Current Policy" : "View Current Policy";
+
+  if (!opening || policySummary.dataset.loaded) return;
+
+  try {
+    const response = await fetch("/api/policy", { cache: "no-store" });
+    const policy = await response.json();
+
+    policySummary.innerHTML = `
+      <div class="policy-grid">
+        <div><strong>Policy</strong><span>${policy.policyVersion}</span></div>
+        <div><strong>Customer</strong><span>${policy.customerType}</span></div>
+        <div><strong>Automatic refund limit</strong><span>₹${Number(policy.automaticRefundLimit).toLocaleString("en-IN")}</span></div>
+        <div><strong>Allowed reasons</strong><span>${policy.allowedReasons.join(", ")}</span></div>
+        <div><strong>Approval above limit</strong><span>${policy.approvalRequiredAboveLimit ? "Required" : "Not required"}</span></div>
+        <div><strong>Execution guard</strong><span>₹5,000 hard limit</span></div>
+      </div>
+    `;
+    policyJson.textContent = JSON.stringify(policy, null, 2);
+    policySummary.dataset.loaded = "true";
+  } catch (error) {
+    policySummary.textContent = "Unable to load current policy.";
+    policyJson.textContent = String(error);
+  }
+});
