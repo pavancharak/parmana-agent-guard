@@ -90,8 +90,8 @@ export async function authorizeWithParmana(action) {
   }
 
   return {
-    decision: "REMOTE_APPROVAL_REACHED",
-    reason: "PARMANA_REACHED_EXECUTION_DISPATCH",
+    decision: "AUTHORIZED",
+    reason: "PARMANA_AUTHORIZED_EXECUTION_DISPATCH",
     policyVersion,
     source: "REAL_PARMANA_API",
     transactionId: transaction.businessTransactionId,
