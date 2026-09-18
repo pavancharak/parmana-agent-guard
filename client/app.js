@@ -36,18 +36,40 @@ async function runScenario(button) {
   const result = await response.json();
 
   const remote = result.authorization.remoteResponse || {};
+  const remoteStatus = result.authorization.remoteStatus ?? null;
+  const isApproved = result.authorization.decision === "APPROVE";
+  const isRejected =
+    result.authorization.decision === "REJECT" ||
+    remoteStatus === 403 ||
+    remote.code === "POLICY_DENIED";
+  const isDispatchFailure = remoteStatus !== null && remoteStatus >= 500;
+  const responseLabel = isApproved
+    ? "PARMANA APPROVED"
+    : isRejected
+      ? "PARMANA REJECTED"
+      : isDispatchFailure
+        ? "PARMANA DISPATCH RESPONSE"
+        : "PARMANA RESPONSE";
+  const responseClass = isApproved ? "allow" : "block";
+  const statusLabel = isDispatchFailure
+    ? "Parmana reached dispatch, but the downstream connector did not complete."
+    : isRejected
+      ? "Parmana rejected the policy request. Execution was not attempted."
+      : "No authorization decision was returned by Parmana.";
 
   // Step 1: show exactly what Parmana returned. The UI does not invent
   // an authorization decision when the API did not provide one.
   authorization.innerHTML = `
-    <div class="decision ${result.authorization.decision === "APPROVE" ? "allow" : "block"}">
-      PARMANA RESPONSE
+    <div class="decision ${responseClass}">
+      ${responseLabel}
     </div>
-    <p><strong>Parmana HTTP:</strong> ${result.authorization.remoteStatus ?? "N/A"}</p>
+    <p><strong>Parmana HTTP:</strong> ${remoteStatus ?? "N/A"}</p>
+    <p><strong>Status:</strong> ${statusLabel}</p>
     <p><strong>Requested:</strong> ₹${action.amount.toLocaleString("en-IN")}</p>
     <p><strong>Policy:</strong> ${result.authorization.policyVersion || "customer-refund@1.0.0"}</p>
     <p><strong>Parmana decision field:</strong> ${result.authorization.decision ?? "not returned"}</p>
     <p><strong>Parmana reason field:</strong> ${result.authorization.reason ?? "not returned"}</p>
+    <p><strong>Execution boundary:</strong> ${isApproved ? "APPROVE received. Execution may proceed." : "NOT EXECUTED"}</p>
     <details open>
       <summary>Exact Parmana API response</summary>
       <pre>${JSON.stringify(remote, null, 2)}</pre>
